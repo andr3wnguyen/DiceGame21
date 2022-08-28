@@ -1,2 +1,2 @@
 # DiceGame21
-Dice game based off of blackjack played from the commandline
+Dice game based off of blackjack played from desktop interface using tkinter. 
