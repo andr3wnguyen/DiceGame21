@@ -1,77 +1,127 @@
+from tkinter import *
+from tkinter import messagebox
 import random
-"""
-Dicegame based on blackjack, the game is initiated by rolling a dice three times and summating the values for the player and the House. 
-The player then has a choice to make, either to hit (roll another dice) or to stick with the current number.
-The aim is to get 21 or as close to it as possible, and the winner is the player who gets closer to 21 without going over.
-Anyone who rolls over a total of 21 goes 'bust' and loses; if it is a tie, then the House wins (house advantage).
-When a player 'sticks' with their chioce, the house will continue to hit until it fulfils the winning criteria, i.e. if it has a value that
-is less than the player's value and is still less than 21, it will continue to hit, even at the risk of going bust.
 
-"""
-"""
-TODO, create GUI for program and implement other features e.g. split.
-TODO, ask if player wants to play again rather than quit out of.
-"""
-#initiate the two starting values with global variables
+
+#create window 
+
+window = Tk()
+window.title("DiceGame21")
+window.geometry("400x400")
+window.resizable(False, False)
+window.configure(borderwidth=5, background="green")
+
+#initiate game variables
 houseValue = 0
 userValue = 0
 
-#command - start - initiates the game by adding 3 random numbers between 1 and 6 
-def start(score):
-    for i in range(3):
-        score += random.randint(1,6)
-    return score
+# ======================================== commands =====================================================]
+#help/info box
+def help():
+    messagebox.showinfo("Help", "Dicegame based on blackjack. Pressing Play rolls 3 dices and adds up yours and the House's numbers, press Hit to roll again, press Stick to keep your current value. The aim is to get closest to 21 without rolling over. Anyone who rolls over 21 goes bust and loses! If the House rolls the same as you, they automatically win (House advantage). Good luck!")
 
-#command - hit - increases the score by a random int between 1 and 6
+#method to print gametext to main label
+def printText(update):
+    main.configure(text = update)
+
+#method for initiating the game, rolls 3 dice and sums the score
+def initialRole(baseScore):
+        for i in range(3):
+            baseScore += random.randint(1,6)
+        return baseScore
+
+#to initiate the game once player starts/restarts
+def gameStart():
+    global userValue 
+    global houseValue 
+    userValue = initialRole(userValue)
+    houseValue = initialRole(houseValue)
+    playButton.configure(state="disabled")
+    hitButton.configure(state="active")
+    stickButton.configure(state="active")
+    return f"You've rolled {userValue}. The House has rolled {houseValue}. \nHit or stick?"
+
+#hit - main method for gameplay
 def hit(score):
     score += random.randint(1,6)
     return int(score)
 
-#compares scores at the end to dictate winner, userscore automatically loses if hits over 21 so no extra conditionals needed 
-def compareScores(userScore, houseScore):
-    if (((21-userScore) < (21-houseScore)) and houseScore < 21) or houseScore > 21:
-        print("You win!")
-        print("===================================================")
+#updates the value when a user hits and prints to the console
+def userHitUpdate():
+    global userValue
+    userValue = hit(userValue)
+    if userValue > 21:
+        hitButton.configure(state="disabled")
+        stickButton.configure(state="disabled")
+        messagebox.showinfo("Bust!", f"You hit for {userValue}. You lose!")
+        return f"You hit for {userValue} and went bust!"
     else:
-        print("You lose!")
-        print("===================================================")
+        return f"You hit for {userValue}. The house has rolled {houseValue}. \nHit or stick?"
 
+#updates the value when the House hits and prints to the console
+def houseHitUpdate():
+    global houseValue
+    houseValue=hit(houseValue)
+    return houseValue
 
-#game engine/logic - 3 random numbers between 1 and 6, added (startNumber), ask user to hit/stick. House will also have 3 random numbers
-#house logic, to keep hitting until number fulfils winning criteria. 
-"""
-Winning criteria for user: player score must be under 21 but score difference between 21 and player score must be smaller than the difference
-between the House score and 21. If anyone hits for above 21, they lose. 
-"""
-game = True
-userValue = start(userValue)
-houseValue = start(houseValue)
-while game:
-    print("===================================================" )
-    print(f"<> Your score is {userValue}, the House currently has {houseValue}. <> \n \n        +          Hit or stick?           + ")
-    print("===================================================")
-    user = input()
-    if user.lower() in ("hit", "stick"):
-        if user == "hit":
-            print("===================================================")
-            userValue = hit(userValue)
-            print(f"You hit for {userValue}.".center(52))
-            if userValue > 21:
-                print("Bust! You lose!".center(50))
-                print("===================================================")
-                break
-            print("===================================================")
-        elif user == "stick":
-            #if user chooses to stick, House game logic initiates
-            print("===================================================")
-            while houseValue < 21 and houseValue < userValue:
-                houseValue = hit(houseValue)
-                print(f"House hits and gets {houseValue}!")
-                if houseValue > 21:
-                    print(f"House hits for {houseValue}. Bust! You win!")
-            print("===================================================")
-            compareScores(userValue, houseValue)
-            break
+#stick method saves the users current score, initiates the House's game logic 
+def stick():
+    hitButton.configure(state="disabled")
+    global houseValue
+    while int(houseValue) < int(userValue) and int(houseValue) < 21:
+        houseValue = houseHitUpdate()
+        if houseValue > 21:
+            main.configure(text= f"You rolled {userValue}. The House hit for {houseValue} and went bust!")
+        else:
+            main.configure(text= f"You rolled {userValue}. The House has hit for {houseValue}.")
+    checkScores()
+
+#method to compare player score to house score
+def checkScores():
+    global userValue
+    global houseValue
+    if (((21-userValue) < (21-houseValue)) and userValue < 21) or houseValue > 21:
+        messagebox.showinfo("Winner", "You win!")
     else:
-        #to only accept hit or stick as a user input
-        print("\nPlease enter 'hit' or 'stick'.\n")
+        messagebox.showinfo("Loser", "You lose!")
+
+#replay, resets game
+def replay():
+    global userValue
+    global houseValue
+    userValue = 0
+    houseValue = 0
+    printText(gameStart())
+    
+# ================================ GUI code =======================================================
+
+#main game box; place is on a separate line so it can be configured. 
+main = Label(window, text=" ", height=9, width=52)
+main.place(x=10,y=90)
+
+#instruction messagebox/help button
+helpButton = Button(window, text="?", font=("Helvetica", 7, "bold"), width=1, height=1, command=help).place(x=375,y=0)
+
+#instruction label
+startLabel = Label(window, text="Press Play to begin", font=("Ariel")).pack()
+
+#start button - starts the game loop; command is passed as a lambda expression to stop it from executing upon loading; separate line place to make callable
+playButton = Button(window, text="Play", width=10, height=1, font=("Helvetica", 10, "bold"), command=lambda:printText(gameStart()))
+playButton.place(x=150,y=50)
+
+#hit button
+hitButton = Button(window, text="Hit", width=10, height=2, font=("Helvetica", 20, "bold"), state="disabled", command=lambda:printText(userHitUpdate()))
+hitButton.place(x=10,y=240)
+
+#stick button
+stickButton = Button(window, text="Stick", width=10, height=2, font=("Helvetica", 20, "bold"), state="disabled", command=lambda:stick())
+stickButton.place(x=200, y=240)
+
+#restart button
+restartButton = Button(window, text="Replay", width=7, height=1, command=lambda:replay())
+restartButton.place(x=130,y=350)
+
+#exit button, lambda quit
+exitButton = Button(window, text="Quit", width=7, height=1, command=lambda:window.quit()).place(x=200,y=350)
+
+window.mainloop()
